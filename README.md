@@ -4,4 +4,4 @@
 
 Rectify 11 Builds (Unofficial Repo) 
 
-This Repositories main aim is to provide users with a more up to date build of Rectify 11 as i continues to be developed. Any harm done to your system is not my fault!
+This Repositories main aim is to provide users with a more up to date build of Rectify 11 as it continues to be developed. Any harm done to your system is not my fault!
