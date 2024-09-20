@@ -1,6 +1,6 @@
-﻿using Microsoft.VisualBasic;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using static Rectify11.Phase2.Program;
@@ -38,12 +38,13 @@ namespace Rectify11.Phase2
                 }
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine("Failure deleting file: " + path + Environment.NewLine + ex.ToString());
                 return false;
             }
         }
-        public static bool SafeFileCopy(string file)
+        public static bool InstallSys32Dll(string file)
         {
             // whatever, its only for a few cases
             try
@@ -70,12 +71,13 @@ namespace Rectify11.Phase2
                 return false;
             }
         }
-		public static bool SafeFileCopyWOW64(string file)
+        public static bool InstallWow64Dll(string file)
         {
             // whatever, its only for a few cases
             try
             {
                 if (!SafeFileDeletion(Path.Combine(Variables.sysWOWFolder, file))) return false;
+
                 File.Copy(Path.Combine(Variables.r11Files, file), Path.Combine(Variables.sysWOWFolder, file), true);
                 return true;
             }
@@ -84,12 +86,12 @@ namespace Rectify11.Phase2
                 return false;
             }
         }
-        public static bool SafeFileCopyWOW64(string src, string dest)
+        public static bool SafeFileMove(string src, string dest)
         {
             try
             {
                 if (!SafeFileDeletion(dest)) return false;
-                File.Copy(src, dest, true);
+                File.Move(src, dest);
                 return true;
             }
             catch
@@ -97,28 +99,25 @@ namespace Rectify11.Phase2
                 return false;
             }
         }
-		public static bool SafeFileMove(string src, string dest)
-		{
-			try
-			{
-				if (!SafeFileDeletion(dest)) return false;
-				File.Move(src, dest);
-				return true;
-			}
-			catch
-			{
-				return false;
-			}
-		}
-		public static void ImportReg(string path)
+        public static void ImportReg(string path)
         {
             try
             {
-                Interaction.Shell(Path.Combine(Variables.sys32Folder, "reg.exe") + " import " + path, AppWinStyle.Hide, true);
+                Process proc = new Process();
+                proc.StartInfo.FileName = Path.Combine(Variables.sys32Folder, "reg.exe");
+                proc.StartInfo.Arguments = "import \"" + path + "\"";
+                proc.StartInfo.CreateNoWindow = true;
+                proc.Start();
+                proc.WaitForExit();
+
+                if (proc.ExitCode != 0)
+                {
+                    Console.WriteLine(path + " failed with exit code " + proc.ExitCode);
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(Path.GetFileName(path) + " failed.", ex);
+                Console.WriteLine(Path.GetFileName(path) + " failed." + ex.ToString());
             }
         }
         public static string FixString(string path, bool x86)

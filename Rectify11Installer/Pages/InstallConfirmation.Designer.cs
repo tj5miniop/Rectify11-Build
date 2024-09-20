@@ -31,7 +31,7 @@
 			this.summaryTitle = new Rectify11Installer.Controls.DarkAwareLabel();
 			this.summaryItems = new Rectify11Installer.Controls.DarkAwareLabel();
 			this.summaryFooter = new Rectify11Installer.Controls.DarkAwareLabel();
-			this.restoreCheckbox = new();
+			this.restoreCheckbox = new Rectify11Installer.Controls.DarkAwareCheckBox();
 			this.SuspendLayout();
 			// 
 			// summaryTitle
@@ -95,7 +95,6 @@
 			this.FooterVisible = true;
 			this.NextButtonEnabled = true;
 			this.UpdateFrame = true;
-			this.Page = Rectify11Installer.Core.TabPages.summaryPage;
 			this.NextButtonText = Rectify11Installer.Strings.Rectify11.buttonInstall;
             this.ResumeLayout(false);
 			this.PerformLayout();

@@ -12,7 +12,7 @@ namespace Rectify11Installer.Core
             {
                 Logger.WriteLine("Uninstalling icons");
                 Logger.WriteLine("──────────────────");
-                frm.InstallerProgress = Rectify11Installer.Strings.Rectify11.uninstallingIcons;
+                frm.InstallerProgress = Strings.Rectify11.uninstallingIcons;
                 if (!Icons.Uninstall()) return false;
                 Variables.RestartRequired = true;
                 Console.WriteLine("══════════════════════════════════════════════");
@@ -21,7 +21,7 @@ namespace Rectify11Installer.Core
             {
                 Logger.WriteLine("Uninstalling themes");
                 Logger.WriteLine("───────────────────");
-                frm.InstallerProgress = Rectify11Installer.Strings.Rectify11.uninstallingThemes;
+                frm.InstallerProgress = Strings.Rectify11.uninstallingThemes;
                 if (!Themes.Uninstall()) return false;
                 Variables.RestartRequired = true;
                 Console.WriteLine("══════════════════════════════════════════════");
@@ -30,7 +30,7 @@ namespace Rectify11Installer.Core
             {
                 Logger.WriteLine("Uninstalling extras");
                 Logger.WriteLine("───────────────────");
-                frm.InstallerProgress = Rectify11Installer.Strings.Rectify11.uninstallingExtras;
+                frm.InstallerProgress = Strings.Rectify11.uninstallingExtras;
                 if (!Extras.Uninstall()) return false;
                 Console.WriteLine("══════════════════════════════════════════════");
             }
@@ -51,6 +51,11 @@ namespace Rectify11Installer.Core
             Helper.SafeFileDeletion(Path.Combine(Variables.sys32Folder, "ImmersiveFontHandler.dll"));
             Helper.SafeFileDeletion(Path.Combine(Variables.sys32Folder, "twinuifonts.dll"));
 
+            Helper.SafeFileDeletion(Path.Combine(Variables.sysWOWFolder, "iconres.dll"));
+            Helper.SafeFileDeletion(Path.Combine(Variables.sysWOWFolder, "duires.dll"));
+            Helper.SafeFileDeletion(Path.Combine(Variables.sysWOWFolder, "ImmersiveFontHandler.dll"));
+            Helper.SafeFileDeletion(Path.Combine(Variables.sysWOWFolder, "twinuifonts.dll"));
+
             Logger.CommitLog();
             // complete uninstall
             if (Variables.CompleteUninstall)
@@ -70,7 +75,7 @@ namespace Rectify11Installer.Core
                 using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", true);
                 key.DeleteSubKey("Rectify11", false);
             }
-            if (!Variables.RestartRequired) frm.InstallerProgress = Rectify11Installer.Strings.Rectify11.doneYouCanClose;
+            if (!Variables.RestartRequired) frm.InstallerProgress = Strings.Rectify11.doneYouCanClose;
             return true;
         }
     }

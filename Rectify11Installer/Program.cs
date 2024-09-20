@@ -1,5 +1,4 @@
-﻿using KPreisser.UI;
-using Rectify11Installer.Core;
+﻿using Rectify11Installer.Core;
 using Rectify11Installer.Win32;
 using System;
 using System.Globalization;
@@ -18,12 +17,23 @@ namespace Rectify11Installer
         [STAThread]
         private static void Main(string[] args)
         {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+
             // check if another instance is running
             using var mutex = new Mutex(false, "Rectify11Setup");
             bool isAnotherInstanceOpen = !mutex.WaitOne(TimeSpan.Zero);
             if (isAnotherInstanceOpen)
             {
-                MessageBox.Show("Another instance of the rectify11 setup is already running.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // TODO localize
+                TaskDialogPage pg = new TaskDialogPage();
+                pg.Heading = "Installer is already running";
+                pg.Text = "Another instance of the rectify11 setup is already running.";
+                pg.Icon = TaskDialogIcon.ShieldGrayBar;
+                pg.Buttons = [TaskDialogButton.OK];
+                pg.Caption = Strings.Rectify11.Title;
+                TaskDialog.ShowDialog(pg);
                 return;
             }
 
@@ -53,18 +63,11 @@ namespace Rectify11Installer
                     if (!ShowCompatibilityMessage(true, Strings.Rectify11.compatWarnText, Strings.Rectify11.compatWarnInstruc))
                         return;
                 }
-
-                // Windows 11 builds greater than 25977 have known issues
-                if (Environment.OSVersion.Version.Build >= 25977)
-                {
-                    if (!ShowCompatibilityMessage(true, Strings.Rectify11.compatWarnText, Strings.Rectify11.tooNewBuild))
-                        return;
-                }
             }
 
             if (Environment.OSVersion.Version.Build >= 10240)
             {
-                Theme.InitTheme();
+                ThemeUtil.InitTheme();
                 if ((Environment.OSVersion.Version.Build >= 17763) && (Environment.OSVersion.Version.Build < 18362))
                 {
                     DarkMode.AllowDarkModeForApp(true);
@@ -78,14 +81,12 @@ namespace Rectify11Installer
             // Load the Rectify11 theme to skin the installer with it
             File.WriteAllBytes(Path.Combine(Path.GetTempPath(), "Dark.msstyles"), Properties.Resources.Dark);
             File.WriteAllBytes(Path.Combine(Path.GetTempPath(), "light.msstyles"), Properties.Resources.light);
-            Theme.LoadTheme();
+            ThemeUtil.LoadTheme();
 
             // Optimize the installer
             ProfileOptimization.SetProfileRoot(Path.Combine(Path.GetTempPath(), "Rectify11"));
             ProfileOptimization.StartProfile("Startup.Profile");
 
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
             Thread.CurrentThread.CurrentUICulture = CultureInfo.CurrentUICulture;
             Application.Run(new FrmWizard());
 
@@ -98,38 +99,43 @@ namespace Rectify11Installer
             if (CanAllow)
             {
                 // in this case, we can skip the warning
-                bool yes = false;
-                TaskDialog td = new();
-                td.Page.Text = header;
-                td.Page.Instruction = text;
-                td.Page.Title = Strings.Rectify11.Title;
-                td.Page.StandardButtons = TaskDialogButtons.OK;
-                td.Page.Icon = TaskDialogStandardIcon.SecurityWarningYellowBar;
-                td.Page.EnableHyperlinks = true;
+                TaskDialogPage pg = new TaskDialogPage();
+                pg.Heading = text;
+                pg.Text = header;
+                pg.Buttons = [TaskDialogButton.OK];
+                pg.Icon = TaskDialogIcon.ShieldWarningYellowBar;
+                pg.EnableLinks = true;
+                pg.Caption = Strings.Rectify11.Title;
+
                 TaskDialogExpander tde = new();
-                tde.Text = "<a href=\"link1\">Run anyway (not recommended)</a>";
+                tde.Text = "<a href=\"lnkRun\">Run anyway (not recommended)</a>";
                 tde.Expanded = false;
                 tde.CollapsedButtonText = Strings.Rectify11.moreInfo;
                 tde.ExpandedButtonText = Strings.Rectify11.lessInfo;
-                td.Page.HyperlinkClicked += (s, e) =>
+
+                pg.Expander = tde;
+
+                pg.LinkClicked += delegate (object s, TaskDialogLinkClickedEventArgs e)
                 {
-                    yes = true;
-                    td.Close();
+                    if (e.LinkHref == "lnkRun")
+                    {
+                        pg.BoundDialog.Close();
+                    }
                 };
-                td.Page.Expander = tde;
-                td.Show();
-                return yes;
+
+                if (TaskDialog.ShowDialog(pg) == TaskDialogButton.OK)
+                    return false;
+                return true;
             }
             else
             {
-                TaskDialog td = new();
-                td.Page.Text = header;
-                td.Page.Instruction = text;
-                td.Page.Title = Strings.Rectify11.Title;
-                td.Page.StandardButtons = TaskDialogButtons.OK;
-                td.Page.Icon = TaskDialogStandardIcon.SecurityErrorRedBar;
-                td.Page.EnableHyperlinks = false;
-                td.Show();
+                TaskDialogPage pg = new();
+                pg.Text = header;
+                pg.Heading = text;
+                pg.Buttons = [TaskDialogButton.OK];
+                pg.Icon = TaskDialogIcon.ShieldErrorRedBar;
+                pg.Caption = Strings.Rectify11.Title;
+                TaskDialog.ShowDialog(pg);
                 return false;
             }
         }

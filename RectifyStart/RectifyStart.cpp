@@ -87,6 +87,58 @@ bool GetStartup()
 	RegCloseKey(hKey);
 	return false;
 }
+bool trayStartup = false;
+
+void SetTrayStartup(bool enable)
+{
+	HKEY hKey;
+	WCHAR path[] = L"C:\\Windows\\Rectify11\\Rectify11TrayTool.exe";
+
+	LONG lnRes = RegOpenKeyEx(HKEY_CURRENT_USER,
+		TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"),
+		0, KEY_WRITE,
+		&hKey);
+	if (ERROR_SUCCESS == lnRes)
+	{
+		if (enable)
+		{
+			lnRes = RegSetValueEx(hKey,
+				TEXT("Rectify11TrayTool"),
+				0,
+				REG_SZ,
+				(const BYTE*)path,
+				(DWORD)wcslen(path) * 2);
+		}
+		else
+		{
+			lnRes = RegDeleteValue(hKey, TEXT("Rectify11TrayTool"));
+		}
+	}
+
+	RegCloseKey(hKey);
+}
+
+bool GetTrayStartup()
+{
+	HKEY hKey;
+	LONG lnRes = RegOpenKeyEx(HKEY_CURRENT_USER,
+		TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"),
+		0, KEY_READ,
+		&hKey);
+	wchar_t buf[255] = { 0 };
+	DWORD dwBufSize = sizeof(buf);
+	DWORD dwType = REG_SZ;
+	if (ERROR_SUCCESS == lnRes)
+	{
+		wchar_t buf[255] = { 0 };
+
+		lnRes = RegQueryValueEx(hKey, TEXT("Rectify11TrayTool"), 0, NULL, reinterpret_cast<LPBYTE>(&buf), &dwBufSize);
+		return lnRes == ERROR_SUCCESS ? true : false;
+	}
+
+	RegCloseKey(hKey);
+	return false;
+}
 
 void ApplyThemeIfNeeded()
 {
@@ -166,6 +218,27 @@ void HandleOpenCpl(Element* elem, Event* iev)
 	}
 }
 
+void UpdateTrayButton()
+{
+	TouchButton* btn = (TouchButton*)hwnd_element->FindDescendent(StrToID((UCString)L"BtnToggleTray"));
+
+	WCHAR text[255];
+	LoadString(hInst, trayStartup ? IDS_ALREADYON : IDS_TURNON, text, 255);
+	btn->SetContentString((UCString)text);
+}
+
+void HandleToggleTray(Element* elem, Event* iev)
+{
+	TouchButton* box = (TouchButton*)elem;
+	if (iev->type == TouchButton::Click)
+	{
+		trayStartup = !trayStartup;
+		SetTrayStartup(trayStartup);
+		UpdateTrayButton();
+	}
+}
+
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPWSTR    lpCmdLine,
@@ -214,8 +287,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	DUIXmlParser::Create(&pParser, NULL, NULL, NULL, NULL);
 	pParser->SetParseErrorCallback(
 		[](UCString err1, UCString err2, int unk, void* ctx) {
-			MessageBox(hwnd, std::format(L"err: {}; {}; {}\n", (LPCWSTR)err1, (LPCWSTR)err2, unk).c_str(),
-			L"Error while parsing DirectUI", S_OK);
+			MessageBox(hwnd, std::format(L"Error from DirectUI: {}; {}; {}\n", (LPCWSTR)err1, (LPCWSTR)err2, unk).c_str(),
+				L"Error while parsing DirectUI", MB_ICONERROR);
 		}, NULL);
 
 	hr = pParser->SetXMLFromResource(IDR_UIFILE, hInstance, (HINSTANCE)hInstance);
@@ -224,9 +297,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	HWNDElement::Create(pwnd->GetHWND(), true, 0, NULL, &defer_key, (Element**)&hwnd_element);
 
 	// Create the root element
-	Element* pWizardMain;
+	Element* pWizardMain = NULL;
 	hr = pParser->CreateElement((UCString)L"WizardMain", hwnd_element, NULL, NULL, (Element**)&pWizardMain);
 
+	if (pWizardMain == NULL)
+	{
+		MessageBox(hwnd, TEXT("A error has occured while creating the main element. The application will now close."), L"Error while creating main window", MB_ICONERROR);
+		return -1;
+	}
 	// Host the window with the element
 	pWizardMain->SetVisible(true);
 	pWizardMain->EndDefer(defer_key);
@@ -237,10 +315,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	TouchCheckBox* startChk = (TouchCheckBox*)pWizardMain->FindDescendent(StrToID((UCString)L"SXWizardCheckbox"));
 	TouchButton* closeBtn = (TouchButton*)pWizardMain->FindDescendent(StrToID((UCString)L"SXWizardDefaultButton"));
 	TouchButton* BtnOpenCpl = (TouchButton*)pWizardMain->FindDescendent(StrToID((UCString)L"BtnOpenCpl"));
+	TouchButton* btnToggleTray = (TouchButton*)hwnd_element->FindDescendent(StrToID((UCString)L"BtnToggleTray"));
+
 	startChk->SetToggleOnClick(true);
 	closeBtn->AddListener(new EventListener(HandleCloseButton));
 	startChk->AddListener(new EventListener(HandleStartCheckbox));
 	BtnOpenCpl->AddListener(new EventListener(HandleOpenCpl));
+	btnToggleTray->AddListener(new EventListener(HandleToggleTray));
+
+	trayStartup = GetTrayStartup();
+	UpdateTrayButton();
 
 	// Setup startchk
 	startChk->SetCheckedState(GetStartup() ? CheckedStateFlags_CHECKED : CheckedStateFlags_NONE);

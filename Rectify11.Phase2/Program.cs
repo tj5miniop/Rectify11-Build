@@ -19,6 +19,7 @@ namespace Rectify11.Phase2
         {
             if (args.Length == 0)
             {
+                Console.WriteLine("Rectify11 Legacy Resource Installation Utility. Do not call this directly, instead use Rectify11Installer.");
                 Environment.Exit(1);
             }
             if (args[0] == "/install")
@@ -44,15 +45,15 @@ namespace Rectify11.Phase2
                 }
 
                 // copy necessary files
-                SafeFileCopy("iconres.dll");
                 ImportReg(Path.Combine(Variables.r11Files, "icons.reg"));
-                SafeFileCopy("duires.dll");
-                SafeFileCopy("ImmersiveFontHandler.dll");
-                SafeFileCopy("twinuifonts.dll");
-	            SafeFileCopyWOW64("iconres.dll");
-                SafeFileCopyWOW64("duires.dll");
-                SafeFileCopyWOW64("ImmersiveFontHandler.dll");
-                SafeFileCopyWOW64("twinuifonts.dll");
+                InstallSys32Dll("duires.dll");
+                InstallSys32Dll("iconres.dll");
+                InstallSys32Dll("ImmersiveFontHandler.dll");
+                InstallSys32Dll("twinuifonts.dll");
+                InstallWow64Dll("iconres.dll");
+                InstallWow64Dll("duires.dll");
+                InstallWow64Dll("ImmersiveFontHandler.dll");
+                InstallWow64Dll("twinuifonts.dll");
                 InstallFonts();
 
                 r11Reg?.Close();
@@ -254,9 +255,9 @@ namespace Rectify11.Phase2
                 }
                 for (int k = 0; k < uninstallFiles.Length; k++)
                 {
-					if (uninstallFiles[k].Contains("mmc.exe"))
+                    if (uninstallFiles[k].Contains("mmc.exe"))
                     {
-						foreach (var process in Process.GetProcessesByName("mmc"))
+                        foreach (var process in Process.GetProcessesByName("mmc"))
                         {
                             process.Kill();
                         }
@@ -325,11 +326,11 @@ namespace Rectify11.Phase2
                     }
                 }
 
-                SafeFileDeletion(Path.Combine(Variables.sys32Folder,"iconres.dll"));
+                SafeFileDeletion(Path.Combine(Variables.sys32Folder, "iconres.dll"));
                 SafeFileDeletion(Path.Combine(Variables.sys32Folder, "duires.dll"));
                 SafeFileDeletion(Path.Combine(Variables.sys32Folder, "ImmersiveFontHandler.dll"));
                 SafeFileDeletion(Path.Combine(Variables.sys32Folder, "twinuifonts.dll"));
-				SafeFileDeletion(Path.Combine(Variables.sysWOWFolder,"iconres.dll"));
+                SafeFileDeletion(Path.Combine(Variables.sysWOWFolder, "iconres.dll"));
                 SafeFileDeletion(Path.Combine(Variables.sysWOWFolder, "duires.dll"));
                 SafeFileDeletion(Path.Combine(Variables.sysWOWFolder, "ImmersiveFontHandler.dll"));
                 SafeFileDeletion(Path.Combine(Variables.sysWOWFolder, "twinuifonts.dll"));
